@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: selfie
+  namespace: selfie
+  annotations:
+    alb.ingress.kubernetes.io/group.name: bdd-shared
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-1:150596267098:certificate/a9eeae1c-dbea-4382-b092-9dd531853c83
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-port: "80"
+spec:
+  ingressClassName: alb
+  rules:
+    - host: selfie.bdddx.agc.jp
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: selfie-web
+                port:
+                  number: 80

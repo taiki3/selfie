@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Drop-in starting point for bdd/devops apps/selfie/. The EKS team adds the
+# SOPS-encrypted secret as `secret.enc.yaml` (see secret.example.yaml for keys)
+# and wires the app into apps/kustomization.yaml + an apps/selfie-ks.yaml entry.
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  # - secret.enc.yaml          # added by the EKS team (SOPS); see secret.example.yaml
+  - api-deployment.yaml
+  - web-deployment.yaml
+  - ingress.yaml
+  - image-automation.yaml

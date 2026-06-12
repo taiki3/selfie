@@ -1,0 +1,162 @@
+name: CI
+
+# Hybrid runners (same split as AGC-DI-DSG/vixelo):
+#   - Lint / typecheck / test / build run on GitHub-hosted `ubuntu-latest`
+#     (no internal dependencies, so they work on any repo / fork).
+#   - build-push runs on the self-hosted ARC runner `arc-runner-set` on the
+#     bdd-eks cluster — it needs ECR (EKS Pod Identity) and the internal proxy.
+#
+# Prerequisites for build-push to work (see deploy/README.md):
+#   - This repo lives under the AGC-DI-DSG org (where `arc-runner-set` is
+#     registered), or a runner set is registered for this repo.
+#   - Repo/org Actions *variables*: ECR_REGISTRY, HTTP_PROXY, HTTPS_PROXY, NO_PROXY
+#   - ECR repositories `selfie-api` and `selfie-web` exist.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'deploy/**'
+      - 'docs/**'
+      - '**/*.md'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'deploy/**'
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Backend: typecheck + build + integration tests (against a PG service) ──
+  api-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: selfie
+          POSTGRES_PASSWORD: selfie
+          POSTGRES_DB: selfie
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U selfie"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://selfie:selfie@127.0.0.1:5432/selfie
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
+
+  # ── Frontend: typecheck + unit tests + production build ──
+  web-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  # ── Docker build & push to ECR (main push only, after tests pass) ──
+  build-push:
+    runs-on: arc-runner-set
+    timeout-minutes: 20
+    needs: [api-ci, web-ci]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: selfie-api
+            context: api
+            dockerfile: api/Dockerfile
+          - image: selfie-web
+            context: web
+            dockerfile: web/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve AWS credentials (EKS Pod Identity)
+        run: |
+          # The Pod Identity endpoint (169.254.170.23) isn't supported by the
+          # amazon-ecr-login SDK, so fetch credentials manually and export them.
+          AUTH_TOKEN="${AWS_CONTAINER_AUTHORIZATION_TOKEN:-}"
+          if [ -z "$AUTH_TOKEN" ] && [ -n "${AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE:-}" ]; then
+            AUTH_TOKEN="$(cat "$AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE")"
+          fi
+          CREDS=$(curl -s --noproxy 169.254.170.23 \
+            -H "Authorization: $AUTH_TOKEN" \
+            "$AWS_CONTAINER_CREDENTIALS_FULL_URI")
+          for key in AccessKeyId SecretAccessKey Token; do
+            val=$(echo "$CREDS" | jq -r ".$key")
+            echo "::add-mask::$val"
+          done
+          {
+            echo "AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r .AccessKeyId)"
+            echo "AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r .SecretAccessKey)"
+            echo "AWS_SESSION_TOKEN=$(echo "$CREDS" | jq -r .Token)"
+          } >> "$GITHUB_ENV"
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx with proxy
+        run: |
+          docker buildx create --use --name proxy-builder-${{ matrix.image }} \
+            --driver docker-container \
+            --driver-opt "env.HTTP_PROXY=${{ vars.HTTP_PROXY }}" \
+            --driver-opt "env.HTTPS_PROXY=${{ vars.HTTPS_PROXY }}"
+
+      - name: Build & push ${{ matrix.image }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ vars.ECR_REGISTRY }}/${{ matrix.image }}:latest
+            ${{ vars.ECR_REGISTRY }}/${{ matrix.image }}:sha-${{ github.sha }}
+          build-args: |
+            HTTP_PROXY=${{ vars.HTTP_PROXY }}
+            HTTPS_PROXY=${{ vars.HTTPS_PROXY }}
+            NO_PROXY=${{ vars.NO_PROXY }}
+          cache-from: type=registry,ref=${{ vars.ECR_REGISTRY }}/${{ matrix.image }}:buildcache
+          cache-to: type=registry,ref=${{ vars.ECR_REGISTRY }}/${{ matrix.image }}:buildcache,mode=max

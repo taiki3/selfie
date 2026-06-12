@@ -1,0 +1,56 @@
+# Local development stack for プロフ帳 (selfie).
+#   docker compose up --build
+#   open http://localhost:8080
+#
+# Service names (selfie-api / selfie-db) match the production Kubernetes Service
+# names, so web/nginx.conf and the API's DATABASE_URL are unchanged across envs.
+services:
+  selfie-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: selfie
+      POSTGRES_PASSWORD: selfie
+      POSTGRES_DB: selfie
+    ports:
+      - "5432:5432"
+    volumes:
+      - selfie-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U selfie"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  selfie-api:
+    build:
+      context: ./api
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+    environment:
+      PORT: "3001"
+      DATABASE_URL: postgres://selfie:selfie@selfie-db:5432/selfie
+      ADMIN_PASSWORD: lunch2026
+      SESSION_SECRET: dev-only-session-secret
+      SECURE_COOKIES: "false"
+    depends_on:
+      selfie-db:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+
+  selfie-web:
+    build:
+      context: ./web
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+    depends_on:
+      - selfie-api
+    ports:
+      - "8088:80"
+
+volumes:
+  selfie-db-data:
