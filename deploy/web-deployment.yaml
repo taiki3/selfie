@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selfie-web
+  namespace: selfie
+  labels:
+    app: selfie-web
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: selfie-web
+  template:
+    metadata:
+      labels:
+        app: selfie-web
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: default
+      containers:
+        - name: web
+          # nginx serving the Vite build; proxies /api → selfie-api:3001.
+          image: 150596267098.dkr.ecr.ap-northeast-1.amazonaws.com/selfie-web:latest # {"$imagepolicy": "flux-system:selfie-web"}
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "25m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: selfie-web
+  namespace: selfie
+spec:
+  selector:
+    app: selfie-web
+  ports:
+    - port: 80
+      targetPort: 80

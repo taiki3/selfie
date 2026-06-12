@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selfie-api
+  namespace: selfie
+  labels:
+    app: selfie-api
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: selfie-api
+  template:
+    metadata:
+      labels:
+        app: selfie-api
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: default
+      containers:
+        - name: api
+          # Flux ImageUpdateAutomation bumps this to the newest pushed tag.
+          image: 150596267098.dkr.ecr.ap-northeast-1.amazonaws.com/selfie-api:latest # {"$imagepolicy": "flux-system:selfie-api"}
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: selfie-config
+            - secretRef:
+                name: selfie-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "384Mi"
+              cpu: "500m"
+          # /ready performs a Postgres `SELECT 1`; /health is a static liveness check.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3001
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: selfie-api
+  namespace: selfie
+spec:
+  selector:
+    app: selfie-api
+  ports:
+    - port: 3001
+      targetPort: 3001

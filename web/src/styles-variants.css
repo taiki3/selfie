@@ -1,0 +1,163 @@
+/* =========================================================
+   styles-variants.css
+   デザインプリセット: teen(中高生・男女問わず) / min(すっきり・Twitter向け)
+   既定の pop はベース styles.css のまま
+   ========================================================= */
+
+/* =========================================================
+   TEEN — 中高生・男女問わずのニュートラル版
+   キャンディ感を抑え、さわやか・落ち着いた配色と
+   ソフトシャドウ。丸さは残すが「子どもっぽさ」を低減。
+   ========================================================= */
+body:has(.app[data-style="teen"]) {
+  background: #F4FAF9 !important;
+}
+.app[data-style="teen"] {
+  --font-pop: "Zen Maru Gothic", sans-serif !important;
+  --ink: #2F3B43;
+  --ink-soft: #6E7C84;
+  --ink-faint: #A9B5BB;
+  --r-lg: 22px;
+  --r-xl: 26px;
+  --r-md: 16px;
+}
+/* 見出しは太めゴシックで引き締める */
+.app[data-style="teen"] .brand,
+.app[data-style="teen"] .section-head h2,
+.app[data-style="teen"] .nickname,
+.app[data-style="teen"] .sheet-hero .nickname { font-weight: 900; letter-spacing: .01em; }
+
+/* 水玉オフ */
+.app[data-style="teen"].dot-bg { background-image: none !important; }
+
+/* シャドウをソフトに（ハードオフセット撤廃） */
+.app[data-style="teen"] .btn {
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-deep) 38%, transparent) !important;
+}
+.app[data-style="teen"] .btn:active { transform: translateY(1px) !important; box-shadow: 0 3px 8px color-mix(in srgb, var(--theme-deep) 30%, transparent) !important; }
+.app[data-style="teen"] .btn.ghost { box-shadow: inset 0 0 0 2px var(--theme) !important; }
+.app[data-style="teen"] .icon-btn { box-shadow: 0 4px 12px rgba(47,59,67,.14) !important; }
+.app[data-style="teen"] .pill { box-shadow: none !important; }
+.app[data-style="teen"] .filter-chip { box-shadow: 0 2px 8px rgba(47,59,67,.08) !important; }
+.app[data-style="teen"] .filter-chip.on { box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-deep) 36%, transparent) !important; }
+.app[data-style="teen"] .tab.active { box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-deep) 40%, transparent) !important; }
+.app[data-style="teen"] .tab.create-tab .fab { box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-deep) 45%, transparent) !important; }
+
+/* カード：浮きすぎないソフトシャドウ + 落ち着いた帯 */
+.app[data-style="teen"] .pcard { box-shadow: 0 8px 22px rgba(47,59,67,.10) !important; }
+.app[data-style="teen"] .pcard:hover { transform: translateY(-3px) !important; box-shadow: 0 14px 30px rgba(47,59,67,.14) !important; }
+.app[data-style="teen"] .pcard::before { height: 56px; opacity: .42; }
+.app[data-style="teen"] .tape { display: none !important; }
+
+/* 点線→実線の控えめ区切り */
+.app[data-style="teen"] .pcard-foot,
+.app[data-style="teen"] .react-bar,
+.app[data-style="teen"] .comments h4 { border-color: color-mix(in srgb, var(--theme) 45%, #E3EAEC) !important; }
+.app[data-style="teen"] .pcard-foot { border-top-style: solid !important; }
+.app[data-style="teen"] .react-bar { border-top-style: solid !important; }
+
+.app[data-style="teen"] .react-btn { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--theme) 60%, #DDE6E7) !important; }
+.app[data-style="teen"] .catch::before,
+.app[data-style="teen"] .catch::after { content: ""; }
+.app[data-style="teen"] .pcard .catch { font-family: var(--font-body); font-style: normal; }
+
+/* =========================================================
+   MIN — すっきりミニマル（Twitter/X 展開向け・老若男女）
+   ほぼモノトーン + 単色アクセント。フラットで共有しやすい
+   プロフィールカード。装飾なし。
+   ========================================================= */
+body:has(.app[data-style="min"]) {
+  background: #FFFFFF !important;
+}
+.app[data-style="min"] {
+  --font-pop: "Zen Kaku Gothic New", "Zen Maru Gothic", sans-serif !important;
+  --font-body: "Zen Kaku Gothic New", "Zen Maru Gothic", sans-serif !important;
+  --font-hand: "Zen Kaku Gothic New", sans-serif !important;
+  --ink: #15202B;
+  --ink-soft: #5B7083;
+  --ink-faint: #8B98A5;
+  --card: #FFFFFF;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+}
+.app[data-style="min"] .brand,
+.app[data-style="min"] .section-head h2,
+.app[data-style="min"] .nickname,
+.app[data-style="min"] .sheet-hero .nickname { font-weight: 700; letter-spacing: 0; }
+
+/* 装飾オフ */
+.app[data-style="min"].dot-bg { background-image: none !important; }
+.app[data-style="min"] .sparkle { display: none !important; }
+.app[data-style="min"] .tape { display: none !important; }
+
+/* ヘッダー：透明・境界線 */
+.app[data-style="min"] .app-header { background: rgba(255,255,255,.9) !important; border-bottom: 1px solid #EFF3F4; }
+.app[data-style="min"] .brand { color: var(--ink); }
+.app[data-style="min"] .pill { background: #F0F3F5 !important; color: var(--ink-soft) !important; box-shadow: none !important; }
+.app[data-style="min"] .section-head .pill { background: var(--theme-soft) !important; color: var(--theme-deep) !important; }
+
+/* ボタン：フラット */
+.app[data-style="min"] .btn { box-shadow: none !important; border-radius: 99px; font-weight: 700; }
+.app[data-style="min"] .btn:hover { transform: none !important; filter: brightness(.96); box-shadow: none !important; }
+.app[data-style="min"] .btn:active { transform: scale(.98) !important; box-shadow: none !important; }
+.app[data-style="min"] .btn.ghost { box-shadow: inset 0 0 0 1.5px #CFD9DE !important; color: var(--ink) !important; }
+.app[data-style="min"] .icon-btn { box-shadow: none !important; border: 1px solid #EFF3F4; }
+.app[data-style="min"] .filter-chip { box-shadow: none !important; border: 1px solid #EFF3F4; color: var(--ink-soft); font-weight: 700; }
+.app[data-style="min"] .filter-chip.on { box-shadow: none !important; background: var(--theme-deep) !important; border-color: var(--theme-deep); }
+
+/* タブバー：軽い境界、ハードシャドウ撤廃 */
+.app[data-style="min"] .tabbar { box-shadow: 0 4px 20px rgba(0,0,0,.10) !important; border: 1px solid #EFF3F4; }
+.app[data-style="min"] .tab.active { background: var(--theme-deep) !important; box-shadow: none !important; }
+.app[data-style="min"] .tab.create-tab .fab { background: var(--theme-deep) !important; box-shadow: none !important; }
+
+/* カード：白地・1px境界・極薄シャドウ。共有しやすいプロフィールカード */
+.app[data-style="min"] .pcard {
+  border: 1px solid #EFF3F4;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04) !important;
+  border-radius: 16px;
+}
+.app[data-style="min"] .pcard:hover { transform: none !important; box-shadow: 0 2px 10px rgba(0,0,0,.08) !important; border-color: #E1E8ED; }
+.app[data-style="min"] .pcard::before { height: 4px; opacity: 1; background: var(--accent-deep, var(--theme-deep)); }
+.app[data-style="min"] .avatar { box-shadow: none !important; border-width: 2px; }
+
+.app[data-style="min"] .pcard .catch { font-family: var(--font-body); font-style: normal; color: var(--ink); font-size: 14px; }
+.app[data-style="min"] .pcard .catch::before,
+.app[data-style="min"] .pcard .catch::after { content: ""; }
+.app[data-style="min"] .field-value.catch { font-family: var(--font-body) !important; font-size: 16px !important; color: var(--ink) !important; }
+
+/* タグ：薄グレー */
+.app[data-style="min"] .tag { background: #F0F3F5 !important; color: var(--ink-soft) !important; font-weight: 600; }
+.app[data-style="min"] .field-label { background: #F0F3F5 !important; color: var(--ink-soft) !important; }
+
+/* 区切り：実線 1px */
+.app[data-style="min"] .pcard-foot,
+.app[data-style="min"] .react-bar,
+.app[data-style="min"] .comment-form,
+.app[data-style="min"] .comments h4 { border-color: #EFF3F4 !important; border-top-style: solid !important; }
+.app[data-style="min"] .pcard-foot { border-top: 1px solid #EFF3F4 !important; }
+
+/* リアクション：ツイート風のフラットなアクション */
+.app[data-style="min"] .react-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 1px solid #EFF3F4;
+  color: var(--ink-soft) !important;
+  font-weight: 700;
+}
+.app[data-style="min"] .react-btn.on { background: var(--theme-soft) !important; color: var(--theme-deep) !important; box-shadow: none !important; border-color: var(--theme) !important; }
+
+/* 詳細ヒーロー：淡い単色 */
+.app[data-style="min"] .sheet-hero .big-avatar { box-shadow: none !important; border: 3px solid #fff; }
+.app[data-style="min"] .sheet { box-shadow: 0 20px 50px rgba(0,0,0,.25) !important; }
+
+/* コメント吹き出し：薄グレー、ツイート風 */
+.app[data-style="min"] .comment .bubble { background: #F7F9FA !important; border: 1px solid #EFF3F4; }
+.app[data-style="min"] .comment-form input { background: #F7F9FA; border: 1px solid #EFF3F4; }
+
+/* 入力フォーム */
+.app[data-style="min"] .txt,
+.app[data-style="min"] .ta { border-color: #E1E8ED !important; border-radius: 12px; }
+.app[data-style="min"] .editor-card { box-shadow: 0 1px 3px rgba(0,0,0,.05) !important; border: 1px solid #EFF3F4; }
+.app[data-style="min"] .av-opt.sel { box-shadow: inset 0 0 0 2px var(--theme-deep) !important; }

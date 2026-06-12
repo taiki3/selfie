@@ -1,0 +1,84 @@
+# Flux image automation — mirrors bdd/devops apps/ayas/image-automation.yaml.
+# Tracks the digest of the `:latest` tag pushed by CI and rewrites the
+# Deployment image markers ({"$imagepolicy": "flux-system:selfie-*"}) to
+# `:latest@sha256:<digest>` via the Setters strategy.
+#
+# --- ImageRepository: scan ECR ---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: selfie-api
+  namespace: flux-system
+spec:
+  image: 150596267098.dkr.ecr.ap-northeast-1.amazonaws.com/selfie-api
+  interval: 5m
+  provider: aws
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: selfie-web
+  namespace: flux-system
+spec:
+  image: 150596267098.dkr.ecr.ap-northeast-1.amazonaws.com/selfie-web
+  interval: 5m
+  provider: aws
+---
+# --- ImagePolicy: track the latest tag's digest ---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: selfie-api
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: selfie-api
+  filterTags:
+    pattern: '^latest$'
+  policy:
+    alphabetical: {}
+  digestReflectionPolicy: Always
+  interval: 10m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: selfie-web
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: selfie-web
+  filterTags:
+    pattern: '^latest$'
+  policy:
+    alphabetical: {}
+  digestReflectionPolicy: Always
+  interval: 10m
+---
+# --- ImageUpdateAutomation: commit digest updates to Git ---
+# `sourceRef` (the writable GitRepository) is the EKS team's existing one
+# (bdd-eks-rw on the devops repo); confirm the name when integrating.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: selfie
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: bdd-eks-rw
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: flux@bdd-eks.local
+        name: flux-image-automation
+      messageTemplate: "chore(selfie): update image digest\n\n{{range .Changed.Changes}}{{print .OldValue}} -> {{println .NewValue}}{{end}}"
+    push:
+      branch: main
+  update:
+    path: ./apps/selfie
+    strategy: Setters

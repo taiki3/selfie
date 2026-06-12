@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: selfie-config
+  namespace: selfie
+data:
+  PORT: "3001"
+  # Behind the ALB (HTTPS terminated at the LB), so cookies must be Secure.
+  SECURE_COOKIES: "true"
+  # Same-origin via nginx (/api proxy), so CORS is effectively unused; set the
+  # public origin for completeness.
+  ALLOWED_ORIGINS: "https://selfie.bdddx.agc.jp"
+  # NOTE: selfie-api makes no outbound internet calls (only in-cluster Postgres),
+  # so no HTTP_PROXY is needed at runtime. DATABASE_URL / SESSION_SECRET /
+  # ADMIN_PASSWORD come from the selfie-secrets Secret (envFrom).
